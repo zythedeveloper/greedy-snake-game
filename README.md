@@ -1,11 +1,35 @@
-# Greedy Snake
+# 🐍 Greedy Snake
 
-A full-stack, retro pixel-style "Greedy Snake" game.
+Classic Greedy Snake reinvented through agentic software engineering. Developed using Google Antigravity to coordinate AI agents across a modern stack for a seamless, autonomous build process.
 
+## 🛠 Tech Stack
+
+| Layer | Technology | Role |
+| :--- | :--- | :--- |
+| **Orchestration** | **Google Antigravity** | Multi-agent coordination & weightless state sync |
+| **Frontend** | **Next.js 15+** | React-based UI with Agentic hooks |
+| **Backend** | **FastAPI** | High-performance asynchronous API for telemetry |
+| **Database** | **SQLite** | Local persistence for high scores and agent logs |
+| **Package Management**| **uv / npm** | Lightning-fast dependency resolution |
+| **Environment** | **Conda** | Isolated Python 3.10+ runtime |
+
+---
 ## Directory Structure
+```text
+greedy-snake/
+├── 📁 backend/             # FastAPI + Database Logic
+│   ├── 📄 main.py          # API Entry point
+│   ├── 📄 model.py         # Game model
+│   └── 📄 database.py      # SQLite & SQLAlchemy models
+├── 📁 frontend/            # Next.js Logic
+│   ├── 📁 public/          # Static assets
+│   ├── 📁 src/             # Source code
+│   ├──── 📁 app/           # Next.js app directory
+│   ├──── 📁 components/    # UI Components
+│   ├──── 📁 context/       
 
-- **/frontend**: Contains the Next.js application, including the UI, game logic, theming (light/dark mode), and API integration.
-- **/backend**: Contains the FastAPI application and SQLite database handling user authentication, scores, and leaderboards.
+```
+
 
 ## Prerequisites
 
