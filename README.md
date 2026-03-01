@@ -14,7 +14,7 @@ Classic Greedy Snake reinvented through agentic software engineering. Developed 
 | **Environment** | **Conda** | Isolated Python 3.10+ runtime |
 
 ---
-## Directory Structure
+## 📂 Directory Structure
 ```text
 greedy-snake/
 ├── 📁 backend/             # FastAPI + Database Logic
@@ -39,7 +39,7 @@ Ensure you have the following installed before proceeding:
 - **Conda** (or Miniconda): For virtual environment management.
 - **uv**: The default Python package manager for this project.
 
-## Installation
+## ⚙️ Installation
 
 ### 1. Backend Dependencies
 
@@ -71,7 +71,7 @@ cd frontend
 npm install
 ```
 
-## Running the Application
+## 🚀 Running the Application
 
 I have set up a root `package.json` that uses `concurrently` to run both the frontend and backend in one single terminal window! 
 
