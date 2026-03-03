@@ -1,16 +1,36 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+} from "react";
 
 type Theme = "light" | "dark";
 type Difficulty = "easy" | "normal" | "hard";
+
+export interface UserProfile {
+  id: string;
+  name: string;
+  email: string;
+  image?: string | null;
+}
 
 interface AppContextType {
   theme: Theme;
   toggleTheme: () => void;
   setTheme: (t: Theme) => void;
+  // Auth state
+  userProfile: UserProfile | null;
+  setUserProfile: (u: UserProfile | null) => void;
+  isGuest: boolean;
+  guestName: string;
+  setGuestMode: (name: string) => void;
+  clearSession: () => void;
+  // Legacy helpers
   userId: string;
-  setUserId: (id: string) => void;
   difficulty: Difficulty;
   setDifficulty: (d: Difficulty) => void;
   score: number;
@@ -23,27 +43,41 @@ const AppContext = createContext<AppContextType | null>(null);
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<Theme>("dark");
-  const [userId, setUserIdState] = useState("");
   const [difficulty, setDifficultyState] = useState<Difficulty>("normal");
   const [score, setScore] = useState(0);
   const [highScore, setHighScoreState] = useState(0);
   const [mounted, setMounted] = useState(false);
 
+  // Auth state
+  const [userProfile, setUserProfileState] = useState<UserProfile | null>(null);
+  const [isGuest, setIsGuest] = useState(false);
+  const [guestName, setGuestName] = useState("");
+
   // Hydrate from localStorage
   useEffect(() => {
     const savedTheme = localStorage.getItem("snake_theme") as Theme | null;
-    const savedUser = localStorage.getItem("snake_user_id") || "";
     const savedDifficulty = localStorage.getItem("snake_difficulty") as Difficulty | null;
     const savedHighScore = parseInt(localStorage.getItem("snake_high_score") || "0", 10);
+    const savedProfile = localStorage.getItem("snake_user_profile");
+    const savedGuest = localStorage.getItem("snake_guest_name");
 
     if (savedTheme) setThemeState(savedTheme);
-    if (savedUser) setUserIdState(savedUser);
     if (savedDifficulty) setDifficultyState(savedDifficulty);
     setHighScoreState(savedHighScore);
+
+    if (savedProfile) {
+      try {
+        setUserProfileState(JSON.parse(savedProfile));
+      } catch { /* ignore */ }
+    } else if (savedGuest) {
+      setIsGuest(true);
+      setGuestName(savedGuest);
+    }
+
     setMounted(true);
   }, []);
 
-  // Sync theme class on <html>
+  // Sync theme
   useEffect(() => {
     if (!mounted) return;
     document.documentElement.classList.toggle("dark", theme === "dark");
@@ -53,11 +87,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const setTheme = useCallback((t: Theme) => setThemeState(t), []);
   const toggleTheme = useCallback(() => {
     setThemeState((prev) => (prev === "dark" ? "light" : "dark"));
-  }, []);
-
-  const setUserId = useCallback((id: string) => {
-    setUserIdState(id);
-    localStorage.setItem("snake_user_id", id);
   }, []);
 
   const setDifficulty = useCallback((d: Difficulty) => {
@@ -70,11 +99,39 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem("snake_high_score", s.toString());
   }, []);
 
-  // Prevent hydration mismatch
+  const setUserProfile = useCallback((u: UserProfile | null) => {
+    setUserProfileState(u);
+    setIsGuest(false);
+    setGuestName("");
+    if (u) {
+      localStorage.setItem("snake_user_profile", JSON.stringify(u));
+      localStorage.removeItem("snake_guest_name");
+    } else {
+      localStorage.removeItem("snake_user_profile");
+    }
+  }, []);
+
+  const setGuestMode = useCallback((name: string) => {
+    setIsGuest(true);
+    setGuestName(name);
+    setUserProfileState(null);
+    localStorage.setItem("snake_guest_name", name);
+    localStorage.removeItem("snake_user_profile");
+  }, []);
+
+  const clearSession = useCallback(() => {
+    setUserProfileState(null);
+    setIsGuest(false);
+    setGuestName("");
+    localStorage.removeItem("snake_user_profile");
+    localStorage.removeItem("snake_guest_name");
+  }, []);
+
+  // Derived legacy userId for game page
+  const userId = userProfile?.id ?? (isGuest ? guestName : "");
+
   if (!mounted) {
-    return (
-      <div style={{ background: "#0a0a0f", minHeight: "100vh" }} />
-    );
+    return <div style={{ background: "#0a0a0f", minHeight: "100vh" }} />;
   }
 
   return (
@@ -83,8 +140,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         theme,
         toggleTheme,
         setTheme,
+        userProfile,
+        setUserProfile,
+        isGuest,
+        guestName,
+        setGuestMode,
+        clearSession,
         userId,
-        setUserId,
         difficulty,
         setDifficulty,
         score,

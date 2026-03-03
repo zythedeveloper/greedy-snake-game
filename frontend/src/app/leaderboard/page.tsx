@@ -7,11 +7,11 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 interface LeaderboardEntry {
     id: number;
-    user_id: string;
+    display_name: string;
+    is_guest: boolean;
     score: number;
     timestamp: string;
     difficulty: string;
-    theme: string;
 }
 
 export default function LeaderboardPage() {
@@ -35,8 +35,7 @@ export default function LeaderboardPage() {
 
     const formatDate = (ts: string) => {
         try {
-            const d = new Date(ts);
-            return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+            return new Date(ts).toLocaleDateString("en-US", { month: "short", day: "numeric" });
         } catch {
             return "—";
         }
@@ -57,17 +56,13 @@ export default function LeaderboardPage() {
             <div className="pixel-card w-full max-w-lg overflow-hidden">
                 {loading ? (
                     <div className="flex items-center justify-center py-16">
-                        <span className="text-accent text-[0.5rem] font-pixel animate-blink">
-                            LOADING...
-                        </span>
+                        <span className="text-accent text-[0.5rem] font-pixel animate-blink">LOADING...</span>
                     </div>
                 ) : error ? (
                     <div className="flex flex-col items-center justify-center py-16">
                         <span className="text-fruit text-[0.5rem] font-pixel">{error}</span>
-                        <button
-                            onClick={() => window.location.reload()}
-                            className="text-[0.45rem] text-muted hover:text-accent mt-4 font-pixel transition-colors"
-                        >
+                        <button onClick={() => window.location.reload()}
+                            className="text-[0.45rem] text-muted hover:text-accent mt-4 font-pixel transition-colors">
                             ↻ RETRY
                         </button>
                     </div>
@@ -75,10 +70,7 @@ export default function LeaderboardPage() {
                     <div className="flex flex-col items-center justify-center py-16">
                         <span className="text-2xl mb-3">🐍</span>
                         <span className="text-muted text-[0.5rem] font-pixel">NO SCORES YET</span>
-                        <Link
-                            href="/game"
-                            className="text-[0.45rem] text-accent mt-4 font-pixel hover:underline"
-                        >
+                        <Link href="/game" className="text-[0.45rem] text-accent mt-4 font-pixel hover:underline">
                             ▶ BE THE FIRST
                         </Link>
                     </div>
@@ -86,37 +78,36 @@ export default function LeaderboardPage() {
                     <table className="w-full">
                         <thead>
                             <tr className="border-b-2 border-table-border">
-                                <th className="text-[0.4rem] text-muted font-pixel py-3 px-3 text-left w-12">
-                                    #
-                                </th>
-                                <th className="text-[0.4rem] text-muted font-pixel py-3 px-3 text-left">
-                                    PLAYER
-                                </th>
-                                <th className="text-[0.4rem] text-muted font-pixel py-3 px-3 text-right">
-                                    SCORE
-                                </th>
-                                <th className="text-[0.4rem] text-muted font-pixel py-3 px-3 text-right hidden sm:table-cell">
-                                    DATE
-                                </th>
+                                <th className="text-[0.4rem] text-muted font-pixel py-3 px-3 text-left w-12">#</th>
+                                <th className="text-[0.4rem] text-muted font-pixel py-3 px-3 text-left">PLAYER</th>
+                                <th className="text-[0.4rem] text-muted font-pixel py-3 px-3 text-right">SCORE</th>
+                                <th className="text-[0.4rem] text-muted font-pixel py-3 px-3 text-right hidden sm:table-cell">DATE</th>
                             </tr>
                         </thead>
                         <tbody>
                             {entries.map((entry, i) => (
                                 <tr
                                     key={entry.id}
-                                    className={`
-                    border-b border-table-border transition-colors hover:bg-accent/5
+                                    className={`border-b border-table-border transition-colors hover:bg-accent/5
                     ${i % 2 === 1 ? "bg-table-row-alt" : ""}
-                    ${i === 0 ? "bg-accent/5" : ""}
-                  `}
+                    ${i === 0 ? "bg-accent/5" : ""}`}
                                 >
                                     <td className="text-[0.45rem] font-pixel py-3 px-3">
-                                        {rankEmojis[i] || (
-                                            <span className="text-muted">{i + 1}</span>
-                                        )}
+                                        {rankEmojis[i] || <span className="text-muted">{i + 1}</span>}
                                     </td>
-                                    <td className="text-[0.45rem] font-pixel py-3 px-3 text-foreground truncate max-w-[120px]">
-                                        {entry.user_id}
+                                    <td className="text-[0.45rem] font-pixel py-3 px-3 text-foreground">
+                                        <span className="truncate max-w-[100px] inline-block align-middle">
+                                            {entry.display_name}
+                                        </span>
+                                        {entry.is_guest ? (
+                                            <span className="ml-1.5 inline-block align-middle text-[0.35rem] bg-muted/20 text-muted px-1 py-0.5 rounded font-pixel border border-muted/30">
+                                                GUEST
+                                            </span>
+                                        ) : (
+                                            <span className="ml-1.5 inline-block align-middle text-[0.35rem] bg-accent/20 text-accent px-1 py-0.5 rounded font-pixel border border-accent/30">
+                                                ★
+                                            </span>
+                                        )}
                                     </td>
                                     <td className="text-[0.5rem] font-pixel py-3 px-3 text-right text-accent">
                                         {entry.score.toLocaleString()}
@@ -133,16 +124,12 @@ export default function LeaderboardPage() {
 
             {/* Actions */}
             <div className="flex gap-4 mt-8">
-                <Link
-                    href="/game"
-                    className="pixel-btn bg-btn-primary text-background border-btn-primary-hover hover:bg-btn-primary-hover"
-                >
+                <Link href="/game"
+                    className="pixel-btn bg-btn-primary text-background border-btn-primary-hover hover:bg-btn-primary-hover">
                     🎮 PLAY
                 </Link>
-                <Link
-                    href="/"
-                    className="pixel-btn bg-transparent text-muted border-card-border hover:text-accent hover:border-accent"
-                >
+                <Link href="/"
+                    className="pixel-btn bg-transparent text-muted border-card-border hover:text-accent hover:border-accent">
                     🏠 HOME
                 </Link>
             </div>

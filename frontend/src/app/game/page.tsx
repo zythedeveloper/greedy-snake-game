@@ -28,7 +28,7 @@ function randomFood(snake: Point[]): Point {
 
 export default function GamePage() {
     const router = useRouter();
-    const { userId, difficulty, theme, score, setScore, highScore, setHighScore } = useApp();
+    const { userId, difficulty, theme, score, setScore, highScore, setHighScore, isGuest, guestName } = useApp();
     const canvasRef = useRef<HTMLCanvasElement>(null);
 
     const [gameState, setGameState] = useState<"idle" | "playing" | "paused" | "over">("idle");
@@ -263,17 +263,17 @@ export default function GamePage() {
         if (gameState !== "over" || scoreSaved) return;
 
         setScoreSaved(true);
-        fetch(`${API_URL}/api/save-game`, {
+
+        const body = isGuest
+            ? { score: finalScore, difficulty, theme, is_guest: true, guest_name: guestName || undefined }
+            : { score: finalScore, difficulty, theme };
+
+        fetch("/api/scores/save", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                user_id: userId || "",
-                score: finalScore,
-                difficulty,
-                theme,
-            }),
+            body: JSON.stringify(body),
         }).catch(console.error);
-    }, [gameState, scoreSaved, userId, finalScore, difficulty, theme]);
+    }, [gameState, scoreSaved, isGuest, guestName, finalScore, difficulty, theme]);
 
     // ─── Start / Restart logic ───
     const startGame = () => {

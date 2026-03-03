@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { AppProvider } from "@/context/AppContext";
+import Providers from "@/components/Providers";
 import Navbar from "@/components/Navbar";
 
 export const metadata: Metadata = {
@@ -17,10 +17,10 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
       <body className="min-h-screen bg-background text-foreground antialiased">
-        <AppProvider>
+        <Providers>
           <Navbar />
           <main className="pt-14">{children}</main>
-        </AppProvider>
+        </Providers>
       </body>
     </html>
   );
