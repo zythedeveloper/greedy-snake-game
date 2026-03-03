@@ -12,10 +12,51 @@ const SPEED_MAP = { easy: 150, normal: 100, hard: 60 } as const;
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
+// ─── Feature flags ───────────────────────────────────────────────────────────
+const SCORING_CONFIG = {
+	// Base points per apple per difficulty
+	difficultyPoints: { easy: 1, normal: 3, hard: 5 } as Record<
+		string,
+		number
+	>,
+
+	// Combo multiplier: eating apples within comboWindowMs stacks the multiplier
+	comboEnabled: true,
+	comboWindowMs: 5000,
+
+	// Freshness bonus: apple spawns with full bonus that decays to 0 over time
+	freshnessEnabled: true,
+	freshnessWindowMs: 8000,
+
+	// Special apple varieties
+	specialApplesEnabled: true,
+	goldenChance: 0.5, // 5% — worth 5× base OR shrinks snake tail
+	poisonChance: 0.15, // 15% — deducts points and spikes speed for 1.5s
+
+	// Length bonus: adds snake.length to points earned (before multiplier)
+	lengthBonusEnabled: true,
+
+	// Multi-apple system: spawns a random new apple every X seconds up to max
+	multiAppleEnabled: true,
+	maxApples: 5,
+	minSpawnTimeMs: 2000,
+	maxSpawnTimeMs: 4000,
+	appleLifespanMs: 10000, // Apples despawn after 5 seconds
+};
+// ─────────────────────────────────────────────────────────────────────────────
+
 type Direction = "UP" | "DOWN" | "LEFT" | "RIGHT";
 type Point = { x: number; y: number };
+type FoodType = "normal" | "golden" | "poison";
 
-function randomFood(snake: Point[]): Point {
+type ActiveApple = {
+	id: string;
+	pos: Point;
+	type: FoodType;
+	spawnTime: number;
+};
+
+function randomPosition(snake: Point[]): Point {
 	let food: Point;
 	do {
 		food = {
@@ -24,6 +65,15 @@ function randomFood(snake: Point[]): Point {
 		};
 	} while (snake.some((s) => s.x === food.x && s.y === food.y));
 	return food;
+}
+
+function rollFoodType(): FoodType {
+	if (!SCORING_CONFIG.specialApplesEnabled) return "normal";
+	const r = Math.random();
+	if (r < SCORING_CONFIG.goldenChance) return "golden";
+	if (r < SCORING_CONFIG.goldenChance + SCORING_CONFIG.poisonChance)
+		return "poison";
+	return "normal";
 }
 
 export default function GamePage() {
@@ -46,43 +96,95 @@ export default function GamePage() {
 	>("idle");
 	const [finalScore, setFinalScore] = useState(0);
 	const [scoreSaved, setScoreSaved] = useState(false);
+	const [displayMultiplier, setDisplayMultiplier] = useState(1);
 
-	// Game state refs (to avoid stale closures in the game loop)
+	// ─── Core game refs ───
 	const snakeRef = useRef<Point[]>([{ x: 10, y: 10 }]);
-	const foodRef = useRef<Point>(randomFood([{ x: 10, y: 10 }]));
 	const dirRef = useRef<Direction>("RIGHT");
 	const nextDirRef = useRef<Direction>("RIGHT");
 	const scoreRef = useRef(0);
 	const gameOverRef = useRef(false);
 	const lastTickRef = useRef(0);
 
-	// Theme-derived colors
+	// ─── Advanced scoring / multi-apple refs ───
+	const activeApplesRef = useRef<ActiveApple[]>([]);
+	const spawnTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+	const multiplierRef = useRef(1);
+	const comboTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const speedBoostRef = useRef(false); // poison temporary speed spike
+	const speedBoostTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+	// ─── Theme-derived colors ───
 	const colors =
 		theme === "dark"
 			? {
-					bg: "#121212",
-					snake: "#39FF14",
-					snakeHead: "#7FFF5C",
-					fruit: "#FF3131",
-					grid: "rgba(255,255,255,0.03)",
-					text: "#39FF14",
-				}
+				bg: "#121212",
+				snake: "#39FF14",
+				snakeHead: "#7FFF5C",
+				fruit: "#FF3131",
+				grid: "rgba(255,255,255,0.03)",
+				text: "#39FF14",
+			}
 			: {
-					bg: "#F5F5F5",
-					snake: "#2D5A27",
-					snakeHead: "#4A8C3F",
-					fruit: "#D32F2F",
-					grid: "rgba(0,0,0,0.05)",
-					text: "#2D5A27",
-				};
+				bg: "#F5F5F5",
+				snake: "#2D5A27",
+				snakeHead: "#4A8C3F",
+				fruit: "#D32F2F",
+				grid: "rgba(0,0,0,0.05)",
+				text: "#2D5A27",
+			};
 
-	const speed = SPEED_MAP[difficulty];
+	const getCurrentSpeed = useCallback(() => {
+		const base = SPEED_MAP[difficulty];
+		return speedBoostRef.current ? Math.max(30, Math.floor(base * 0.4)) : base;
+	}, [difficulty]);
+
+	// ─── Spawning Logic ───
+	const scheduleNextSpawn = useCallback(() => {
+		if (spawnTimerRef.current) clearTimeout(spawnTimerRef.current);
+
+		const delay =
+			Math.random() *
+			(SCORING_CONFIG.maxSpawnTimeMs - SCORING_CONFIG.minSpawnTimeMs) +
+			SCORING_CONFIG.minSpawnTimeMs;
+
+		spawnTimerRef.current = setTimeout(() => {
+			if (gameOverRef.current) return;
+
+			// Add a new apple if under limit
+			if (activeApplesRef.current.length < SCORING_CONFIG.maxApples) {
+				const allOccupied = [
+					...snakeRef.current,
+					...activeApplesRef.current.map((a) => a.pos),
+				];
+				activeApplesRef.current.push({
+					id: Math.random().toString(36).substr(2, 9),
+					pos: randomPosition(allOccupied),
+					type: rollFoodType(),
+					spawnTime: Date.now(),
+				});
+			}
+
+			// Queue the next spawn regardless
+			scheduleNextSpawn();
+		}, delay);
+	}, []);
+
+	const spawnAppleImmediately = useCallback((snake: Point[]) => {
+		const allOccupied = [...snake, ...activeApplesRef.current.map((a) => a.pos)];
+		activeApplesRef.current.push({
+			id: Math.random().toString(36).substr(2, 9),
+			pos: randomPosition(allOccupied),
+			type: rollFoodType(),
+			spawnTime: Date.now(),
+		});
+	}, []);
 
 	// ─── Drawing ───
 	const draw = useCallback(
 		(ctx: CanvasRenderingContext2D) => {
 			const snake = snakeRef.current;
-			const food = foodRef.current;
 
 			// Background
 			ctx.fillStyle = colors.bg;
@@ -105,7 +207,6 @@ export default function GamePage() {
 			// Snake
 			snake.forEach((seg, i) => {
 				ctx.fillStyle = i === 0 ? colors.snakeHead : colors.snake;
-				// Pixel-perfect: 1px gap for retro look
 				ctx.fillRect(
 					seg.x * GRID_SIZE + 1,
 					seg.y * GRID_SIZE + 1,
@@ -123,18 +224,71 @@ export default function GamePage() {
 				}
 			});
 
-			// Food — pulsating effect
-			const pulse = Math.sin(Date.now() / 200) * 2;
-			ctx.fillStyle = colors.fruit;
-			ctx.fillRect(
-				food.x * GRID_SIZE + 2 - pulse / 2,
-				food.y * GRID_SIZE + 2 - pulse / 2,
-				GRID_SIZE - 4 + pulse,
-				GRID_SIZE - 4 + pulse,
-			);
-			// Shine on food
-			ctx.fillStyle = "rgba(255,255,255,0.3)";
-			ctx.fillRect(food.x * GRID_SIZE + 4, food.y * GRID_SIZE + 4, 4, 4);
+			// Food / Apples
+			const now = Date.now();
+
+			activeApplesRef.current.forEach((apple) => {
+				const pulse = Math.sin(now / 200) * 2;
+				const { pos, type } = apple;
+
+				if (type === "golden") {
+					// Golden apple — warm shimmer + larger pulse
+					const gPulse = Math.sin(now / 150) * 3;
+					ctx.fillStyle = "#FFD700";
+					ctx.fillRect(
+						pos.x * GRID_SIZE + 1 - gPulse / 2,
+						pos.y * GRID_SIZE + 1 - gPulse / 2,
+						GRID_SIZE - 2 + gPulse,
+						GRID_SIZE - 2 + gPulse,
+					);
+					// Star-like shine
+					ctx.fillStyle = "rgba(255,255,200,0.7)";
+					ctx.fillRect(pos.x * GRID_SIZE + 3, pos.y * GRID_SIZE + 3, 5, 2);
+					ctx.fillRect(pos.x * GRID_SIZE + 3, pos.y * GRID_SIZE + 3, 2, 5);
+					// Outer glow ring
+					ctx.strokeStyle = "rgba(255,215,0,0.4)";
+					ctx.lineWidth = 2;
+					ctx.strokeRect(
+						pos.x * GRID_SIZE - 1,
+						pos.y * GRID_SIZE - 1,
+						GRID_SIZE + 2,
+						GRID_SIZE + 2,
+					);
+				} else if (type === "poison") {
+					// Poison apple — purple with dark shimmer
+					const pPhase = Math.sin(now / 250);
+					ctx.fillStyle = `hsl(270, 100%, ${40 + pPhase * 10}%)`;
+					ctx.fillRect(
+						pos.x * GRID_SIZE + 2 - pulse / 2,
+						pos.y * GRID_SIZE + 2 - pulse / 2,
+						GRID_SIZE - 4 + pulse,
+						GRID_SIZE - 4 + pulse,
+					);
+					// Skull-ish shine
+					ctx.fillStyle = "rgba(200,150,255,0.5)";
+					ctx.fillRect(pos.x * GRID_SIZE + 4, pos.y * GRID_SIZE + 4, 3, 3);
+					// Outer glow ring
+					ctx.strokeStyle = "rgba(139,0,255,0.4)";
+					ctx.lineWidth = 2;
+					ctx.strokeRect(
+						pos.x * GRID_SIZE - 1,
+						pos.y * GRID_SIZE - 1,
+						GRID_SIZE + 2,
+						GRID_SIZE + 2,
+					);
+				} else {
+					// Normal apple — original style
+					ctx.fillStyle = colors.fruit;
+					ctx.fillRect(
+						pos.x * GRID_SIZE + 2 - pulse / 2,
+						pos.y * GRID_SIZE + 2 - pulse / 2,
+						GRID_SIZE - 4 + pulse,
+						GRID_SIZE - 4 + pulse,
+					);
+					ctx.fillStyle = "rgba(255,255,255,0.3)";
+					ctx.fillRect(pos.x * GRID_SIZE + 4, pos.y * GRID_SIZE + 4, 4, 4);
+				}
+			});
 		},
 		[colors],
 	);
@@ -178,19 +332,103 @@ export default function GamePage() {
 
 		snake.unshift(head);
 
-		// Eat food?
-		if (head.x === foodRef.current.x && head.y === foodRef.current.y) {
-			scoreRef.current += 10;
+		// Eat any apple?
+		const eatenIdx = activeApplesRef.current.findIndex(
+			(a) => head.x === a.pos.x && head.y === a.pos.y,
+		);
+
+		if (eatenIdx !== -1) {
+			const eatenApples = activeApplesRef.current.splice(eatenIdx, 1);
+			const eaten = eatenApples[0];
+
+			const base =
+				SCORING_CONFIG.difficultyPoints[difficulty] ??
+				SCORING_CONFIG.difficultyPoints["normal"];
+
+			// Freshness bonus
+			let freshnessBonus = 0;
+			if (SCORING_CONFIG.freshnessEnabled) {
+				const elapsed = Date.now() - eaten.spawnTime;
+				const ratio = Math.max(
+					0,
+					1 - elapsed / SCORING_CONFIG.freshnessWindowMs,
+				);
+				freshnessBonus = Math.round(base * ratio);
+			}
+
+			// Length bonus (snake.length already includes new head from unshift)
+			const lengthBonus = SCORING_CONFIG.lengthBonusEnabled ? snake.length : 0;
+
+			let pointsEarned = base + freshnessBonus + lengthBonus;
+
+			if (eaten.type === "golden") {
+				const shrink = Math.random() < 0.5;
+				if (shrink && snake.length > 2) {
+					// Shrink: remove up to 3 tail segments
+					const remove = Math.min(3, snake.length - 2);
+					snake.splice(snake.length - remove, remove);
+				}
+				pointsEarned *= 5;
+			} else if (eaten.type === "poison") {
+				// Deduct base points and spike speed for 1.5s
+				pointsEarned = -base;
+
+				if (SCORING_CONFIG.specialApplesEnabled) {
+					speedBoostRef.current = true;
+					if (speedBoostTimerRef.current)
+						clearTimeout(speedBoostTimerRef.current);
+					speedBoostTimerRef.current = setTimeout(() => {
+						speedBoostRef.current = false;
+					}, 1500);
+				}
+			}
+
+			// Apply combo multiplier
+			if (SCORING_CONFIG.comboEnabled && eaten.type !== "poison") {
+				pointsEarned = Math.round(pointsEarned * multiplierRef.current);
+
+				// Chain: increment multiplier and reset timer
+				if (comboTimerRef.current) clearTimeout(comboTimerRef.current);
+				multiplierRef.current = Math.min(multiplierRef.current + 1, 10);
+				setDisplayMultiplier(multiplierRef.current);
+
+				comboTimerRef.current = setTimeout(() => {
+					multiplierRef.current = 1;
+					setDisplayMultiplier(1);
+				}, SCORING_CONFIG.comboWindowMs);
+			}
+
+			scoreRef.current = Math.max(0, scoreRef.current + pointsEarned);
 			setScore(scoreRef.current);
-			foodRef.current = randomFood(snake);
+
+			// If we ate the last apple, force spawn immediately to avoid an empty board
+			if (activeApplesRef.current.length === 0) {
+				spawnAppleImmediately(snake);
+			}
 		} else {
 			snake.pop();
 		}
 
-		snakeRef.current = snake;
-	}, [setScore]);
+		// Despawn old apples
+		const now = Date.now();
+		const oldLength = activeApplesRef.current.length;
+		activeApplesRef.current = activeApplesRef.current.filter(
+			(a) => now - a.spawnTime <= SCORING_CONFIG.appleLifespanMs,
+		);
 
-	// ─── Game loop ───
+		// If all apples despawned and none eaten, ensure we have at least 1
+		if (
+			oldLength > 0 &&
+			activeApplesRef.current.length === 0 &&
+			eatenIdx === -1
+		) {
+			spawnAppleImmediately(snake);
+		}
+
+		snakeRef.current = snake;
+	}, [setScore, difficulty, spawnAppleImmediately]);
+
+	// ─── Game loop (uses dynamic speed) ───
 	useEffect(() => {
 		if (gameState !== "playing") return;
 
@@ -208,7 +446,8 @@ export default function GamePage() {
 				return;
 			}
 
-			if (timestamp - lastTickRef.current >= speed) {
+			const currentSpeed = getCurrentSpeed();
+			if (timestamp - lastTickRef.current >= currentSpeed) {
 				tick();
 				lastTickRef.current = timestamp;
 			}
@@ -219,7 +458,7 @@ export default function GamePage() {
 
 		rafId = requestAnimationFrame(loop);
 		return () => cancelAnimationFrame(rafId);
-	}, [gameState, speed, tick, draw, highScore, setHighScore]);
+	}, [gameState, tick, draw, highScore, setHighScore, getCurrentSpeed]);
 
 	// ─── Keyboard ───
 	useEffect(() => {
@@ -300,12 +539,12 @@ export default function GamePage() {
 
 		const body = isGuest
 			? {
-					score: finalScore,
-					difficulty,
-					theme,
-					is_guest: true,
-					guest_name: guestName || undefined,
-				}
+				score: finalScore,
+				difficulty,
+				theme,
+				is_guest: true,
+				guest_name: guestName || undefined,
+			}
 			: { score: finalScore, difficulty, theme };
 
 		fetch("/api/scores/save", {
@@ -324,18 +563,33 @@ export default function GamePage() {
 	]);
 
 	// ─── Start / Restart logic ───
-	const startGame = () => {
+	const startGame = useCallback(() => {
 		snakeRef.current = [{ x: 10, y: 10 }];
-		foodRef.current = randomFood([{ x: 10, y: 10 }]);
 		dirRef.current = "RIGHT";
 		nextDirRef.current = "RIGHT";
 		scoreRef.current = 0;
 		gameOverRef.current = false;
 		lastTickRef.current = 0;
+
+		// Reset scoring state
+		multiplierRef.current = 1;
+		setDisplayMultiplier(1);
+		if (comboTimerRef.current) clearTimeout(comboTimerRef.current);
+		if (speedBoostTimerRef.current) clearTimeout(speedBoostTimerRef.current);
+		speedBoostRef.current = false;
+
+		// Multi-apple start
+		activeApplesRef.current = [];
+		if (spawnTimerRef.current) clearTimeout(spawnTimerRef.current);
+		spawnAppleImmediately([{ x: 10, y: 10 }]);
+
 		setScore(0);
 		setScoreSaved(false);
 		setGameState("playing");
-	};
+
+		// Kick off loop
+		scheduleNextSpawn();
+	}, [scheduleNextSpawn, spawnAppleImmediately, setScore]);
 
 	// ─── Draw idle screen ───
 	useEffect(() => {
@@ -349,8 +603,20 @@ export default function GamePage() {
 		<div className="min-h-[calc(100vh-3.5rem)] flex flex-col items-center justify-center px-4 py-8">
 			{/* HUD */}
 			<div className="w-full max-w-[400px] mb-3 flex items-center justify-between bg-hud-bg backdrop-blur-sm border-2 border-card-border px-4 py-2 font-pixel">
-				<div className="text-[0.45rem] text-muted">
+				<div className="flex items-center gap-2 text-[0.45rem] text-muted">
 					SCORE: <span className="text-accent">{score}</span>
+					{displayMultiplier > 1 && (
+						<span
+							className="text-[0.4rem] px-1 py-0.5 animate-combo-pop"
+							style={{
+								background: "rgba(255,215,0,0.15)",
+								border: "1px solid #FFD700",
+								color: "#FFD700",
+							}}
+						>
+							x{displayMultiplier}
+						</span>
+					)}
 				</div>
 				<div className="text-[0.45rem] text-muted">
 					BEST: <span className="text-fruit">{highScore}</span>
@@ -425,6 +691,18 @@ export default function GamePage() {
 			<p className="text-[0.35rem] text-muted/50 mt-4 text-center tracking-wider">
 				WASD / ARROW KEYS / SWIPE TO MOVE
 			</p>
+
+			{/* Apple legend */}
+			{SCORING_CONFIG.specialApplesEnabled && (
+				<div className="flex gap-4 mt-2 text-[0.3rem] text-muted/60 font-pixel">
+					<span>
+						<span style={{ color: "#FFD700" }}>■</span> GOLDEN = 5×
+					</span>
+					<span>
+						<span style={{ color: "#8B00FF" }}>■</span> POISON = −PTS
+					</span>
+				</div>
+			)}
 		</div>
 	);
 }

@@ -27,6 +27,8 @@
 	--table-row-alt: rgba(0, 0, 0, 0.03);
 	--table-border: #e5e7eb;
 	--shadow: rgba(0, 0, 0, 0.1);
+	--golden-apple: #ffd700;
+	--poison-apple: #8b00ff;
 }
 
 /* ── Dark theme ── */
@@ -55,6 +57,8 @@
 	--table-row-alt: rgba(255, 255, 255, 0.03);
 	--table-border: #2a2a4a;
 	--shadow: rgba(0, 0, 0, 0.5);
+	--golden-apple: #ffd700;
+	--poison-apple: #8b00ff;
 }
 
 @theme inline {
@@ -212,4 +216,21 @@ canvas {
 
 .animate-float {
 	animation: float 3s ease-in-out infinite;
+}
+
+/* ── Combo pop (multiplier badge) ── */
+@keyframes combo-pop {
+	0% {
+		transform: scale(1.4);
+		opacity: 0.6;
+	}
+
+	100% {
+		transform: scale(1);
+		opacity: 1;
+	}
+}
+
+.animate-combo-pop {
+	animation: combo-pop 0.2s ease-out forwards;
 }
