@@ -6,9 +6,9 @@ engine = create_engine(DATABASE_URL, echo=False, connect_args={"check_same_threa
 
 
 def create_db_and_tables():
-    SQLModel.metadata.create_all(engine)
+	SQLModel.metadata.create_all(engine)
 
 
 def get_session():
-    with Session(engine) as session:
-        yield session
+	with Session(engine) as session:
+		yield session
