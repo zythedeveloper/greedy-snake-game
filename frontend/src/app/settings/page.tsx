@@ -38,7 +38,7 @@ export default function SettingsPage() {
 				<h1 className="text-accent text-lg font-pixel animate-glow">
 					SETTINGS
 				</h1>
-				<p className="text-muted text-[0.4rem] mt-2 tracking-widest">
+				<p className="text-muted text-[0.625rem] mt-2 tracking-widest">
 					CUSTOMIZE YOUR GAME
 				</p>
 			</div>
@@ -46,17 +46,17 @@ export default function SettingsPage() {
 			<div className="w-full max-w-md space-y-6">
 				{/* ── Theme Toggle ── */}
 				<div className="pixel-card p-5">
-					<h2 className="text-[0.55rem] font-pixel text-muted mb-4 tracking-wider">
+					<h2 className="text-sm font-pixel text-muted mb-4 tracking-wider">
 						🎨 THEME
 					</h2>
 					<div className="flex items-center justify-between">
 						<div>
-							<p className="text-[0.5rem] font-pixel text-foreground">
+							<p className="text-xs font-pixel text-foreground">
 								{theme === "dark"
 									? "🌙 DARK MODE"
 									: "☀️ LIGHT MODE"}
 							</p>
-							<p className="text-[0.35rem] text-muted mt-1">
+							<p className="text-muted mt-1" style={{ fontSize: 'var(--text-description)' }}>
 								{theme === "dark"
 									? "Neon green on black"
 									: "Forest green on white"}
@@ -67,21 +67,19 @@ export default function SettingsPage() {
 							onClick={toggleTheme}
 							className={`
                 relative w-14 h-7 rounded-full border-2 transition-all duration-300
-                ${
-					theme === "dark"
-						? "bg-accent/20 border-accent"
-						: "bg-muted/20 border-muted"
-				}
+                ${theme === "dark"
+									? "bg-accent/20 border-accent"
+									: "bg-muted/20 border-muted"
+								}
               `}
 						>
 							<span
 								className={`
                   absolute top-0.5 w-5 h-5 rounded-full transition-all duration-300
-                  ${
-						theme === "dark"
-							? "left-7 bg-accent shadow-[0_0_8px_var(--accent)]"
-							: "left-0.5 bg-muted"
-					}
+                  ${theme === "dark"
+										? "left-7 bg-accent shadow-[0_0_8px_var(--accent)]"
+										: "left-0.5 bg-muted"
+									}
                 `}
 							/>
 						</button>
@@ -90,7 +88,7 @@ export default function SettingsPage() {
 					{/* Theme preview swatches */}
 					<div className="mt-4 pt-3 border-t border-card-border flex gap-3">
 						<div className="flex items-center gap-2">
-							<span className="text-[0.35rem] text-muted">
+							<span className="text-[0.625rem] text-muted">
 								BG
 							</span>
 							<div
@@ -104,7 +102,7 @@ export default function SettingsPage() {
 							/>
 						</div>
 						<div className="flex items-center gap-2">
-							<span className="text-[0.35rem] text-muted">
+							<span className="text-[0.625rem] text-muted">
 								SNAKE
 							</span>
 							<div
@@ -118,7 +116,7 @@ export default function SettingsPage() {
 							/>
 						</div>
 						<div className="flex items-center gap-2">
-							<span className="text-[0.35rem] text-muted">
+							<span className="text-[0.625rem] text-muted">
 								FRUIT
 							</span>
 							<div
@@ -136,7 +134,7 @@ export default function SettingsPage() {
 
 				{/* ── Difficulty ── */}
 				<div className="pixel-card p-5">
-					<h2 className="text-[0.55rem] font-pixel text-muted mb-4 tracking-wider">
+					<h2 className="text-sm font-pixel text-muted mb-4 tracking-wider">
 						🎯 DIFFICULTY
 					</h2>
 					<div className="space-y-2">
@@ -147,30 +145,29 @@ export default function SettingsPage() {
 								onClick={() => setDifficulty(d.key)}
 								className={`
                   w-full flex items-center justify-between p-3 border-2 transition-all
-                  ${
-						difficulty === d.key
-							? "border-accent bg-accent/10 text-accent"
-							: "border-card-border text-muted hover:border-accent/50 hover:text-foreground"
-					}
+                  ${difficulty === d.key
+										? "border-accent bg-accent/10 text-accent"
+										: "border-card-border text-muted hover:border-accent/50 hover:text-foreground"
+									}
                 `}
 							>
 								<div className="flex items-center gap-3">
-									<span className="text-lg">{d.icon}</span>
+									<span className="text-2xl">{d.icon}</span>
 									<div className="text-left">
-										<p className="text-[0.45rem] font-pixel">
+										<p className="text-xs font-pixel">
 											{d.label}
 										</p>
-										<p className="text-[0.3rem] text-muted mt-0.5">
+										<p className="text-muted mt-0.5" style={{ fontSize: 'var(--text-description)' }}>
 											{d.desc}
 										</p>
 									</div>
 								</div>
 								<div className="text-right">
-									<p className="text-[0.35rem] font-pixel">
+									<p className="text-[0.625rem] font-pixel">
 										{d.speed}
 									</p>
 									{difficulty === d.key && (
-										<span className="text-[0.3rem] text-accent">
+										<span className="text-[0.5rem] text-accent block mt-1">
 											✓ ACTIVE
 										</span>
 									)}
