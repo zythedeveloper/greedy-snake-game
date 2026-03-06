@@ -123,7 +123,7 @@ export default function LandingPage() {
 
 	// Shared input class
 	const inputCls =
-		"w-full bg-input-bg border-2 border-input-border text-foreground font-pixel text-[0.55rem] px-4 py-3 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/30 placeholder:text-muted/50 transition-all";
+		"w-full bg-input-bg border-2 border-input-border text-foreground font-pixel text-xs px-4 py-3 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/30 placeholder:text-muted/50 transition-all";
 
 	return (
 		<div className="min-h-[calc(100vh-3.5rem)] flex flex-col items-center justify-center px-4 relative overflow-hidden">
@@ -149,22 +149,22 @@ export default function LandingPage() {
 				<h1 className="text-accent text-xl sm:text-3xl font-pixel animate-glow leading-relaxed tracking-wide">
 					GREEDY SNAKE
 				</h1>
-				<p className="text-muted text-[0.5rem] mt-3 tracking-widest uppercase">
+				<p className="text-muted text-[0.625rem] mt-3 tracking-widest uppercase">
 					A retro pixel adventure
 				</p>
-				<span className="inline-block mt-2 text-accent text-[0.5rem] animate-blink">
+				<span className="inline-block mt-2 text-accent text-[0.625rem] animate-blink">
 					▶ INSERT COIN ◀
 				</span>
 			</div>
 
 			{/* Auth Card */}
 			<div className="pixel-card p-6 sm:p-8 w-full max-w-md relative scanlines">
-				<h2 className="text-[0.65rem] text-accent mb-6 text-center tracking-wider">
+				<h2 className="text-xs text-accent mb-6 text-center tracking-wider">
 					— PLAYER LOGIN —
 				</h2>
 
 				{error && (
-					<p className="text-fruit text-[0.5rem] font-pixel mb-4 text-center animate-blink">
+					<p className="text-fruit text-[0.625rem] font-pixel mb-4 text-center animate-blink">
 						⚠ {error}
 					</p>
 				)}
@@ -194,7 +194,7 @@ export default function LandingPage() {
 
 						<div className="flex items-center gap-3 my-1">
 							<div className="flex-1 h-px bg-card-border" />
-							<span className="text-muted text-[0.4rem] font-pixel">
+							<span className="text-muted text-[0.5rem] font-pixel">
 								OR
 							</span>
 							<div className="flex-1 h-px bg-card-border" />
@@ -249,7 +249,7 @@ export default function LandingPage() {
 									setMode("email-signup");
 									resetError();
 								}}
-								className="flex-1 text-[0.45rem] text-muted hover:text-accent transition-colors font-pixel"
+								className="flex-1 text-[0.5rem] text-muted hover:text-accent transition-colors font-pixel"
 							>
 								No account? Sign up
 							</button>
@@ -258,7 +258,7 @@ export default function LandingPage() {
 									setMode("main");
 									resetError();
 								}}
-								className="flex-1 text-[0.45rem] text-muted hover:text-accent transition-colors font-pixel"
+								className="flex-1 text-[0.5rem] text-muted hover:text-accent transition-colors font-pixel"
 							>
 								← Back
 							</button>
@@ -309,7 +309,7 @@ export default function LandingPage() {
 								setMode("email-login");
 								resetError();
 							}}
-							className="w-full text-[0.45rem] text-muted hover:text-accent transition-colors font-pixel"
+							className="w-full text-[0.5rem] text-muted hover:text-accent transition-colors font-pixel"
 						>
 							Already have an account? Sign in
 						</button>
@@ -319,7 +319,7 @@ export default function LandingPage() {
 				{/* ── Guest ── */}
 				{mode === "guest" && (
 					<div className="space-y-3">
-						<label className="block text-[0.5rem] text-muted mb-1 tracking-wider">
+						<label className="block text-[0.625rem] text-muted mb-1 tracking-wider">
 							NICKNAME (optional)
 						</label>
 						<input
@@ -345,7 +345,7 @@ export default function LandingPage() {
 								setMode("main");
 								resetError();
 							}}
-							className="w-full text-[0.45rem] text-muted hover:text-accent transition-colors font-pixel"
+							className="w-full text-[0.5rem] text-muted hover:text-accent transition-colors font-pixel"
 						>
 							← Back
 						</button>
@@ -355,20 +355,20 @@ export default function LandingPage() {
 				<div className="mt-6 pt-4 border-t-2 border-card-border flex justify-center gap-6">
 					<button
 						onClick={() => router.push("/leaderboard")}
-						className="text-[0.5rem] text-muted hover:text-accent transition-colors"
+						className="text-muted hover:text-accent transition-colors" style={{ fontSize: 'var(--text-link)' }}
 					>
 						🏆 Leaderboard
 					</button>
 					<button
 						onClick={() => router.push("/settings")}
-						className="text-[0.5rem] text-muted hover:text-accent transition-colors"
+						className="text-muted hover:text-accent transition-colors" style={{ fontSize: 'var(--text-link)' }}
 					>
 						⚙️ Settings
 					</button>
 				</div>
 			</div>
 
-			<p className="text-[0.4rem] text-muted/50 mt-8 tracking-widest">
+			<p className="text-muted/50 mt-8 tracking-widest" style={{ fontSize: 'var(--text-link)' }}>
 				© 2026 GREEDY SNAKE CORP
 			</p>
 		</div>

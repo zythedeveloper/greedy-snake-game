@@ -54,7 +54,7 @@ export default function LeaderboardPage() {
 				<h1 className="text-accent text-lg font-pixel animate-glow">
 					LEADERBOARD
 				</h1>
-				<p className="text-muted text-[0.4rem] mt-2 tracking-widest">
+				<p className="text-muted text-[0.625rem] mt-2 tracking-widest">
 					TOP 10 PLAYERS
 				</p>
 			</div>
@@ -63,18 +63,18 @@ export default function LeaderboardPage() {
 			<div className="pixel-card w-full max-w-lg overflow-hidden">
 				{loading ? (
 					<div className="flex items-center justify-center py-16">
-						<span className="text-accent text-[0.5rem] font-pixel animate-blink">
+						<span className="text-accent text-xs font-pixel animate-blink">
 							LOADING...
 						</span>
 					</div>
 				) : error ? (
 					<div className="flex flex-col items-center justify-center py-16">
-						<span className="text-fruit text-[0.5rem] font-pixel">
+						<span className="text-fruit text-xs font-pixel">
 							{error}
 						</span>
 						<button
 							onClick={() => window.location.reload()}
-							className="text-[0.45rem] text-muted hover:text-accent mt-4 font-pixel transition-colors"
+							className="text-xs text-muted hover:text-accent mt-4 font-pixel transition-colors"
 						>
 							↻ RETRY
 						</button>
@@ -82,12 +82,12 @@ export default function LeaderboardPage() {
 				) : entries.length === 0 ? (
 					<div className="flex flex-col items-center justify-center py-16">
 						<span className="text-2xl mb-3">🐍</span>
-						<span className="text-muted text-[0.5rem] font-pixel">
+						<span className="text-muted text-xs font-pixel">
 							NO SCORES YET
 						</span>
 						<Link
 							href="/game"
-							className="text-[0.45rem] text-accent mt-4 font-pixel hover:underline"
+							className="text-xs text-accent mt-4 font-pixel hover:underline"
 						>
 							▶ BE THE FIRST
 						</Link>
@@ -96,16 +96,16 @@ export default function LeaderboardPage() {
 					<table className="w-full">
 						<thead>
 							<tr className="border-b-2 border-table-border">
-								<th className="text-[0.4rem] text-muted font-pixel py-3 px-3 text-left w-12">
+								<th className="text-[0.625rem] text-muted font-pixel py-3 px-3 text-left w-12">
 									#
 								</th>
-								<th className="text-[0.4rem] text-muted font-pixel py-3 px-3 text-left">
+								<th className="text-[0.625rem] text-muted font-pixel py-3 px-3 text-left">
 									PLAYER
 								</th>
-								<th className="text-[0.4rem] text-muted font-pixel py-3 px-3 text-right">
+								<th className="text-[0.625rem] text-muted font-pixel py-3 px-3 text-right">
 									SCORE
 								</th>
-								<th className="text-[0.4rem] text-muted font-pixel py-3 px-3 text-right hidden sm:table-cell">
+								<th className="text-[0.625rem] text-muted font-pixel py-3 px-3 text-right hidden sm:table-cell">
 									DATE
 								</th>
 							</tr>
@@ -118,31 +118,31 @@ export default function LeaderboardPage() {
                     ${i % 2 === 1 ? "bg-table-row-alt" : ""}
                     ${i === 0 ? "bg-accent/5" : ""}`}
 								>
-									<td className="text-[0.45rem] font-pixel py-3 px-3">
+									<td className="text-xs font-pixel py-3 px-3">
 										{rankEmojis[i] || (
 											<span className="text-muted">
 												{i + 1}
 											</span>
 										)}
 									</td>
-									<td className="text-[0.45rem] font-pixel py-3 px-3 text-foreground">
+									<td className="font-pixel py-3 px-3 text-foreground" style={{ fontSize: 'var(--text-player)' }}>
 										<span className="truncate max-w-[100px] inline-block align-middle">
 											{entry.display_name}
 										</span>
 										{entry.is_guest ? (
-											<span className="ml-1.5 inline-block align-middle text-[0.35rem] bg-muted/20 text-muted px-1 py-0.5 rounded font-pixel border border-muted/30">
+											<span className="ml-1.5 inline-block align-middle text-[0.5rem] bg-muted/20 text-muted px-1 py-0.5 rounded font-pixel border border-muted/30">
 												GUEST
 											</span>
 										) : (
-											<span className="ml-1.5 inline-block align-middle text-[0.35rem] bg-accent/20 text-accent px-1 py-0.5 rounded font-pixel border border-accent/30">
+											<span className="ml-1.5 inline-block align-middle text-[0.5rem] bg-accent/20 text-accent px-1 py-0.5 rounded font-pixel border border-accent/30">
 												★
 											</span>
 										)}
 									</td>
-									<td className="text-[0.5rem] font-pixel py-3 px-3 text-right text-accent">
+									<td className="text-xs font-pixel py-3 px-3 text-right text-accent">
 										{entry.score.toLocaleString()}
 									</td>
-									<td className="text-[0.4rem] font-pixel py-3 px-3 text-right text-muted hidden sm:table-cell">
+									<td className="text-[0.625rem] font-pixel py-3 px-3 text-right text-muted hidden sm:table-cell">
 										{formatDate(entry.timestamp)}
 									</td>
 								</tr>

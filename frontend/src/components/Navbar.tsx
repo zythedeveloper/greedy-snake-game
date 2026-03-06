@@ -20,10 +20,10 @@ export default function Navbar() {
 			<div className="max-w-5xl mx-auto px-4 flex items-center justify-between h-14">
 				{/* Logo */}
 				<Link href="/" className="flex items-center gap-2 group">
-					<span className="text-lg group-hover:animate-glow transition-all">
+					<span className="text-2xl group-hover:animate-glow transition-all">
 						🐍
 					</span>
-					<span className="text-accent font-pixel text-[0.55rem] hidden sm:block tracking-wider">
+					<span className="text-accent font-pixel text-sm hidden sm:block tracking-wider">
 						SNAKE
 					</span>
 				</Link>
@@ -37,12 +37,11 @@ export default function Navbar() {
 								key={link.href}
 								href={link.href}
 								className={`
-                  px-3 py-2 text-[0.5rem] font-pixel rounded transition-all
-                  ${
-						isActive
-							? "text-accent bg-accent/10 border border-accent/30"
-							: "text-muted hover:text-accent hover:bg-accent/5"
-					}
+                  px-3 py-2 text-xs font-pixel rounded transition-all
+                  ${isActive
+										? "text-accent bg-accent/10 border border-accent/30"
+										: "text-muted hover:text-accent hover:bg-accent/5"
+									}
                 `}
 							>
 								<span className="sm:hidden">{link.icon}</span>

@@ -107,7 +107,7 @@ const SCORING_CONFIG = {
 	poisonChance: 0.15,
 	lengthBonusEnabled: true,
 	multiAppleEnabled: true,
-	maxApples: 5,
+	maxApples: { easy: 5, normal: 7, hard: 10 } as Record<string, number>,
 	minSpawnTimeMs: 2000,
 	maxSpawnTimeMs: 4000,
 	appleLifespanMs: 10000,
@@ -633,18 +633,30 @@ export default function GamePage() {
 		(occupied: Point[]): Point => {
 			const cols = colsRef.current;
 			const rows = rowsRef.current;
+			const cx = Math.floor(cols / 2);
+			const cy = Math.floor(rows / 2);
 			let pos: Point;
 			let tries = 0;
+			let inSafeZone = false;
+			let isDeadly = false;
 			do {
 				pos = {
 					x: Math.floor(Math.random() * cols),
 					y: Math.floor(Math.random() * rows),
 				};
 				tries++;
+
+				const tile = getTile(pos.x, pos.y);
+				inSafeZone = Math.abs(pos.x - cx) <= 2 && Math.abs(pos.y - cy) <= 2;
+				isDeadly = biomeRef.current === "ICELAND"
+					? tile !== TILE.HAZARD
+					: tile !== TILE.CLEAR;
+
 			} while (
 				tries < 500 &&
 				(occupied.some((o) => o.x === pos.x && o.y === pos.y) ||
-					getTile(pos.x, pos.y) !== TILE.CLEAR)
+					isDeadly ||
+					inSafeZone)
 			);
 			return pos;
 		},
@@ -697,7 +709,8 @@ export default function GamePage() {
 			SCORING_CONFIG.minSpawnTimeMs;
 		spawnTimerRef.current = setTimeout(() => {
 			if (gameOverRef.current) return;
-			if (activeApplesRef.current.length < SCORING_CONFIG.maxApples) {
+			const maxA = SCORING_CONFIG.maxApples[difficulty] ?? 5;
+			if (activeApplesRef.current.length < maxA) {
 				const occupied = [
 					...snakeRef.current,
 					...activeApplesRef.current.map((a) => a.pos),
@@ -1399,6 +1412,11 @@ export default function GamePage() {
 		VOLCANO: "#5e1d0d",
 	};
 
+	// ─── UI Scaling modifiers ──────────────────────────────────────────────────
+	const uiScale = difficulty === "easy" ? 1 : difficulty === "hard" ? 1.5 : 1.25;
+	const optPadding = difficulty === "hard" ? "0.3rem 0.15rem" : "0.5rem 0.25rem"; // py-2 px-1 is 0.5rem and 0.25rem
+	const randPadding = difficulty === "hard" ? "0.5rem 0" : "0.75rem 0";           // py-3 is 0.75rem
+
 	return (
 		<div className="min-h-[calc(100vh-3.5rem)] flex flex-col items-center justify-center px-4 py-8">
 			{/* Shared column: HUD + viewport share the same width */}
@@ -1472,32 +1490,35 @@ export default function GamePage() {
 					{/* Idle overlay */}
 					{gameState === "idle" && (
 						<div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm">
-							<p className="text-accent text-[0.6rem] font-pixel mb-4 animate-glow">READY?</p>
+							<p className="text-accent font-pixel mb-4 animate-glow" style={{ fontSize: `${0.6 * uiScale}rem` }}>READY?</p>
 							<button
 								id="play-btn"
 								onClick={() => setGameState("selecting_biome")}
 								className="pixel-btn bg-btn-primary text-background border-btn-primary-hover hover:bg-btn-primary-hover"
+								style={{ fontSize: `${0.5 * uiScale}rem`, padding: optPadding }}
 							>
 								▶ PLAY
 							</button>
-							<p className="text-muted text-[0.4rem] mt-3">or press SPACE / ENTER</p>
+							<p className="text-muted mt-3" style={{ fontSize: `${0.4 * uiScale}rem` }}>or press SPACE / ENTER</p>
 						</div>
 					)}
 
 					{/* Biome Selection Overlay */}
 					{gameState === "selecting_biome" && (
 						<div className="absolute inset-0 flex flex-col items-center justify-center bg-background/90 backdrop-blur-md">
-							<p className="text-accent text-[0.7rem] font-pixel mb-5 animate-pulse">CHOOSE BIOME</p>
+							<p className="text-accent font-pixel mb-5 animate-pulse" style={{ fontSize: `${0.7 * uiScale}rem` }}>CHOOSE BIOME</p>
 							<div className="grid grid-cols-2 gap-3 mb-4 w-[60%] min-w-[200px]">
 								{BIOMES.map((b) => (
 									<button
 										key={b}
 										onClick={() => startGame(b)}
-										className="pixel-btn text-[0.5rem] py-2 px-1 flex items-center justify-center border-2 hover:brightness-110 active:scale-95 transition-all text-shadow-sm whitespace-nowrap"
+										className="pixel-btn flex items-center justify-center border-2 hover:brightness-110 active:scale-95 transition-all text-shadow-sm whitespace-nowrap"
 										style={{
 											backgroundColor: BIOME_COLORS[b].bg,
 											borderColor: BIOME_COLORS[b].badgeText,
-											color: BIOME_COLORS[b].badgeText
+											color: BIOME_COLORS[b].badgeText,
+											fontSize: `${0.5 * uiScale}rem`,
+											padding: optPadding
 										}}
 									>
 										{BIOME_LABELS[b]}
@@ -1506,13 +1527,15 @@ export default function GamePage() {
 							</div>
 							<button
 								onClick={() => startGame("RANDOM")}
-								className="pixel-btn bg-btn-primary text-background text-[0.55rem] border-btn-primary-hover hover:bg-btn-primary-hover w-[60%] min-w-[200px] py-3"
+								className="pixel-btn bg-btn-primary text-background border-btn-primary-hover hover:bg-btn-primary-hover w-[60%] min-w-[200px]"
+								style={{ fontSize: `${0.55 * uiScale}rem`, padding: randPadding }}
 							>
 								❓ RANDOM
 							</button>
 							<button
 								onClick={() => setGameState("idle")}
-								className="mt-4 text-[0.4rem] text-muted hover:text-accent font-pixel underline underline-offset-4"
+								className="mt-4 text-muted hover:text-accent font-pixel underline underline-offset-4"
+								style={{ fontSize: `${0.55 * uiScale}rem` }}
 							>
 								BACK
 							</button>
@@ -1522,11 +1545,11 @@ export default function GamePage() {
 					{/* Game over overlay */}
 					{gameState === "over" && (
 						<div className="absolute inset-0 flex flex-col items-center justify-center bg-background/85 backdrop-blur-sm">
-							<p className="text-fruit text-[0.7rem] font-pixel mb-2 animate-blink">GAME OVER</p>
-							<p className="text-accent text-[0.55rem] font-pixel mb-1">SCORE: {finalScore}</p>
+							<p className="text-fruit font-pixel mb-2 animate-blink" style={{ fontSize: `${0.7 * uiScale}rem` }}>GAME OVER</p>
+							<p className="text-accent font-pixel mb-1" style={{ fontSize: `${0.55 * uiScale}rem` }}>SCORE: {finalScore}</p>
 							<p
-								className="text-[0.4rem] font-pixel mb-6"
-								style={{ color: BIOME_COLORS[activeBiome].badgeText }}
+								className="font-pixel mb-6 line-clamp-1"
+								style={{ color: BIOME_COLORS[activeBiome].badgeText, fontSize: `${0.4 * uiScale}rem` }}
 							>
 								{BIOME_LABELS[activeBiome]}
 							</p>
@@ -1535,6 +1558,7 @@ export default function GamePage() {
 									id="retry-btn"
 									onClick={() => setGameState("selecting_biome")}
 									className="pixel-btn bg-btn-primary text-background border-btn-primary-hover hover:bg-btn-primary-hover"
+									style={{ fontSize: `${0.5 * uiScale}rem`, padding: optPadding }}
 								>
 									↻ RETRY
 								</button>
@@ -1542,6 +1566,7 @@ export default function GamePage() {
 									id="home-btn"
 									onClick={() => router.push("/")}
 									className="pixel-btn bg-transparent text-muted border-card-border hover:text-accent hover:border-accent"
+									style={{ fontSize: `${0.5 * uiScale}rem`, padding: optPadding }}
 								>
 									🏠 HOME
 								</button>
